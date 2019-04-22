@@ -1,0 +1,226 @@
+<html>
+<a href="https://www.udemy.com/code-your-first-game">Crash Udemy Java Course</a><br>
+<canvas id="gameCanvas" width="700" height="500">
+</canvas>
+
+<script>
+// timer
+var myVar;
+
+// background container
+var canvas;
+var canvasContext;
+
+// ball
+var ballX = 50;
+var ballY = 50;
+var ballSpeedX = 10;
+var ballSpeedY = 5;
+
+// paddles
+var paddleWidth = 20;
+var paddleHeight = 100;
+var paddleSpeed = 5;
+
+// green paddle // left paddle
+var paddle1X = 0;
+var paddle1Y = 0;
+
+// purple paddle // right paddle
+var paddle2X = 0;
+var paddle2Y = 0;
+var paddleBottomY = 0;
+
+// game play variables
+var playerLives = 5;
+
+window.onload = function()
+{
+    console.log("Hello World!");
+    canvas = document.getElementById('gameCanvas');
+    canvasContext = canvas.getContext('2d');
+    
+    console.log("draw background");
+    canvasContext.fillStyle = "#000000";
+    canvasContext.fillRect(0, 0, canvas.width, canvas.height);
+    
+    initPaddles(); 
+    
+    var framesPerSecond = 30;
+    myVar = setInterval(callBoth, 1000/framesPerSecond);
+    
+    canvas.addEventListener('mousemove', 
+        function(evt) {
+            var mousePos = calcluateMousePos(evt);
+            paddle1Y = mousePos.y - (paddleHeight/2);
+        });    
+}
+
+function initPaddles()
+{
+    // green paddle // left paddle
+    paddle1X = 0+(paddleWidth*2);
+    paddle1Y = (canvas.height/2) - (paddleHeight*2);
+
+    // purple paddle // right paddle
+    paddle2X = canvas.width  - (paddleWidth*2);
+    paddle2Y = (canvas.height/2) - (paddleHeight*2);
+ }
+       
+function callBoth()
+{
+    moveEverything();
+    drawEverything();
+} 
+
+function ballReset()
+{      
+    ballX = canvas.width/2;
+    ballY = canvas.height/2; 
+    ballSpeedX = ((-1)*ballSpeedX);
+    
+    if ( playerLives < 0)
+    {
+        clearInterval(myVar);
+    }
+    else
+    {    
+        playerLives = playerLives -1;
+    }    
+}
+
+function computerMovement()
+{
+    var paddle2YCenter = paddle2Y + (paddleHeight/2);
+    if(paddle2YCenter < ballY-35)
+    {
+        paddle2Y = paddle2Y + paddleSpeed;
+    }
+    else if( paddle2YCenter > ballY+35 )
+    {
+        paddle2Y = paddle2Y - paddleSpeed;   
+    } 
+    
+    if( paddle2Y < 0 ) // top of screen
+    {
+        var outofbounds = (paddle2Y *(-1));
+        paddle2Y = paddle2Y + outofbounds + paddleHeight;          
+    }
+    else if( paddle2Y > canvas.height ) // bottom of screen
+    {
+        var outofbounds = paddle2Y - canvas.height;
+        paddle2Y = paddle2Y - outofbounds - paddleHeight; 
+    } 
+}
+
+
+function moveEverything()
+{     
+    computerMovement();
+    
+    // Canvas border bounce  - collision detection
+    // horizontal checks
+    if( ballX > canvas.width )  // right side
+    {     
+        ballReset();   
+    }   
+    else if( ballX < 0 ) // left side
+    {    
+        ballReset();                 
+    }
+    ballX = ballX + ballSpeedX;
+    
+    
+    // Vertical checks
+    if( ballY < 0 ) // top of screen
+    {
+        ballSpeedY = ((-1)*ballSpeedY);
+        
+    }
+    else if( ballY > canvas.height ) // bottom of screen
+    {
+        ballSpeedY = ((-1)*ballSpeedY);
+    } 
+    ballY = ballY + ballSpeedY;  
+        
+    //paddles bounce - collision detection         
+    if (ballSpeedX > 0)  // purple paddle bounce ->  ball is moving to the right
+    {         
+        if(ballX < canvas.width) 
+        {
+            if(ballX > paddle2X || ballX == paddle2X )
+            {    
+                if(ballY > paddle2Y || ballY == paddle1Y)
+                {
+                    paddleBottomY = paddle2Y + paddleHeight; 
+                    if( ballY < paddleBottomY) 
+                    {
+                        ballSpeedX = ((-1)*ballSpeedX);
+                    }
+                }    
+            }    
+        }  
+    }    
+    else if (ballSpeedX < 0)  // green paddle bounce  // ball is moving towards the left
+    { 
+        if(ballX > 0) // ballX should be on the screen
+        { 
+            if(ballX <= (paddle1X + paddleWidth)|| ballX == paddle1X ) // ballX  less than the width of the paddle + the paddles position
+            {                      
+                if(ballY > paddle1Y || ballY == paddle1Y)
+                {
+                    paddleBottomY = paddle1Y + paddleHeight;  
+                    if( ballY < paddleBottomY)
+                    { 
+                        ballSpeedX = ((-1) * ballSpeedX); 
+                    }    
+                }      
+            }  
+        }     
+    }  
+    else
+    {
+        console.log("ball has no horizontal movement "); 
+    }     
+}
+function colorRect(leftX, topY, width, height, drawColor)
+{    
+    canvasContext.fillStyle = drawColor;
+    canvasContext.fillRect(leftX, topY, width, height);
+}
+function colorCircle(centerX, centerY, radius, drawColor)
+{    
+    canvasContext.fillStyle = drawColor;
+    canvasContext.beginPath();
+    canvasContext.arc(centerX, centerY, radius, 0 , Math.PI*2, true);
+    canvasContext.fill();
+}
+
+function drawEverything()
+{    
+    // background
+    colorRect(0, 0, canvas.width, canvas.height, "#000000");   
+
+    // green paddle 
+    colorRect(paddle1X, paddle1Y, paddleWidth, paddleHeight, "#66ff66");   
+
+    // purple paddle
+    colorRect(paddle2X, paddle2Y, paddleWidth, paddleHeight, "#e600e6");
+
+    // red ball 
+    colorCircle(ballX, ballY, 10, "#ff0066");  
+}
+
+// only collects mouse inputs for the playable space or background canvas size automatically.
+function calcluateMousePos(evt)
+{
+    var rect = canvas.getBoundingClientRect();
+    var root = document.documentElement;
+    var mouseX = evt.clientX - rect.left - root.scrollLeft;
+    var mouseY = evt.clientY - rect.top - root.scrollTop;
+    return{ x:mouseX, y:mouseY };
+}
+
+
+</script>
+</html>
